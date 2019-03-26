@@ -1,6 +1,6 @@
 extends Node2D
 
-var Voronoi = load("res://Voronoi.gd").new();
+var Voronoi = load("res://voronoi.gd").new();
 
 export(int) var child_count = 10 setget update_child_count
 export(float) var boundary_size = 100 setget update_boundary_size

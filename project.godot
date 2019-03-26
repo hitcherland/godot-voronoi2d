@@ -16,7 +16,7 @@ _global_script_class_icons={
 [application]
 
 config/name="Voronoi2D"
-run/main_scene="res://Examples/example_scene.tscn"
+run/main_scene="res://example/example_scene.tscn"
 config/icon="res://icon.png"
 
 [rendering]
