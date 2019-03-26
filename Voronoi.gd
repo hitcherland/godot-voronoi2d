@@ -92,9 +92,6 @@ class Edge:
 		return [a, b, c]
 
 func voronoi(nodes, stop_at_y = null):
-	var xl1 = Edge.new(Vector2(-1,1), Vector2(1,1))
-	var xl2 = Edge.new(Vector2(1,1), Vector2(-1,1))
-	var i_point = find_intersection(xl1, xl2)
 	var leftmost
 	
 	queue = EventList.new()

@@ -17,11 +17,28 @@ func _ready():
 	update_boundary_size(min_value)
 
 func draw_parabola(focus, directrix):
+		
+	if directrix == focus.y:
+		draw_line(focus, Vector2(focus, 0), Color.white)
+		return
+	
+	var rect = get_viewport_rect()
+	directrix = directrix - focus.y
+	var width = rect.size.x
+	var height = rect.size.y
+
+	
 	var points : PoolVector2Array;
-	var dt = 0.1
-	for x in range(-3 / dt, 3 / dt):
-		points.append(Vector2(x * dt, pow(x * dt, 2) / (-4 * directrix)))
-		points.append(Vector2((x +1)* dt, pow((x + 1)* dt, 2) / (-4 * directrix)))
+	var V = focus - Vector2(0, -directrix)
+	for x in range(-width / 2.0 + focus.x, width / 2.0 + focus.x):
+		points.append(
+			Vector2(x, 
+					pow(x - V.x, 2) / (-4 * directrix) + V.y)
+		)
+		points.append(
+			Vector2(x + 1,
+					pow(x + 1 - V.x, 2) / (-4 * directrix) + V.y)
+		)
 	print("drawing parabola")
 	draw_polyline(points, Color.white)
 
