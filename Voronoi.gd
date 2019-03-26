@@ -69,17 +69,52 @@ class Edge:
 	func _init(new_start, new_direction):
 		start = new_start
 		direction = new_direction
+	
+	func get_line_constants():
+		# ax + by = c
+		var a = 0.0; var b = 0.0; var c = 0.0;
+		
+		if direction == Vector2.ZERO:
+			return
+		elif direction.x == 0:
+			a = 1.0
+			b = 0.0
+			c = start.x / direction.y
+		elif direction.y == 0:
+			a = 0.0
+			b = 1.0
+			c = start.y / direction.x
+		else:
+			a = -direction.y / direction.x
+			b = 1.0 
+			c = a * start.x + b * start.y
+			
+		return [a, b, c]
 
-func get_polygons(nodes):
+func voronoi(nodes, stop_at_y = null):
+	var xl1 = Edge.new(Vector2(-1,1), Vector2(1,1))
+	var xl2 = Edge.new(Vector2(1,1), Vector2(-1,1))
+	var i_point = find_intersection(xl1, xl2)
+	var leftmost
+	
+	queue = EventList.new()
+	root = null
+	directrix = 0
 	var polygons = []
 	if not nodes:
-		return polygons
+		print("no nodes")
+		return [polygons, null]
 	
 	for node in nodes:
-		queue.push(SiteEvent.new(node))
+		if not stop_at_y or node.position.y < stop_at_y:
+			print(stop_at_y, " vs. ", node.position.y)
+			queue.push(SiteEvent.new(node))
 	
 	while queue.size() > 0:
 		var event = queue.pop()
+		if stop_at_y and stop_at_y <= event.key:
+			print(stop_at_y, " <= ", event.key)
+			break
 		print( "new event: ", event.key, " ", event is SiteEvent)
 		directrix = event.key
 		if event is SiteEvent:
@@ -88,19 +123,24 @@ func get_polygons(nodes):
 			var edges = remove_parabola(event.parabola)
 			polygons.append(edges)
 	
-	var leftmost = root
-	while leftmost.left:
+	leftmost = root
+	while leftmost and leftmost.left:
 		leftmost = leftmost.left
 	
-	while leftmost.right:
-		if leftmost.right_edge:
-			leftmost.right_edge.stop = leftmost.right_edge.start + leftmost.right_edge.direction * 1000
-			polygons.append([
-				leftmost.right_edge
-			])
-		leftmost = leftmost.right
-			
-	return polygons
+	#while leftmost.right:
+	#	if leftmost.right_edge:
+	#		remaining_edges
+	#		leftmost.right_edge.stop = leftmost.right_edge.start + leftmost.right_edge.direction * 1000
+	#		polygons.append([leftmost.right_edge])
+	#	leftmost = leftmost.right
+	
+	return [
+		polygons,
+		leftmost
+	]
+
+func get_polygons(nodes, stop_at_y = null):
+	return voronoi(nodes, stop_at_y)[0]
 
 func add_parabola(node):
 	if not root:
@@ -172,15 +212,19 @@ func remove_parabola(parabola):
 	return output
 
 func find_intersection(edge_1, edge_2, fail_if_behind=true):
+	# a_1 * x + b_1 * y = c_1
 	var a_1; var b_1; var c_1
 	var a_2; var b_2; var c_2
 	var p_1; var p_2
 
 	if edge_1 is Edge:
-		a_1 = edge_1.direction.x
-		b_1 = edge_1.direction.y
-		c_1 = a_1 * edge_1.start.x + b_1 * edge_1.start.y
 		p_1 = edge_1.start
+		var constants = edge_1.get_line_constants()
+		if not constants:
+			return
+		a_1 = constants[0]
+		b_1 = constants[1]
+		c_1 = constants[2]
 	else:
 		a_1 = edge_1[0]
 		b_1 = edge_1[1]
@@ -188,10 +232,13 @@ func find_intersection(edge_1, edge_2, fail_if_behind=true):
 		p_1 = edge_1[3]
 		
 	if edge_2 is Edge:
-		a_2 = edge_2.direction.x
-		b_2 = edge_2.direction.y
-		c_2 = a_2 * edge_2.start.x + b_2 * edge_2.start.y
 		p_2 = edge_2.start
+		var constants = edge_2.get_line_constants()
+		if not constants:
+			return
+		a_2 = constants[0]
+		b_2 = constants[1]
+		c_2 = constants[2]
 	else:
 		a_2 = edge_2[0]
 		b_2 = edge_2[1]
@@ -199,6 +246,7 @@ func find_intersection(edge_1, edge_2, fail_if_behind=true):
 		p_2 = edge_2[3]
 	
 	if a_1 * b_2 == a_2 * b_1:
+		#print( "failed due to values", a_1 * b_2, "==", a_2 * b_1)
 		return
 	
 	var x = (b_2 * c_1 - c_2 * b_1) / (a_1 * b_2 - a_2 * b_1 )
@@ -209,16 +257,23 @@ func find_intersection(edge_1, edge_2, fail_if_behind=true):
 	elif b_2 != 0:
 		y = (c_2 - a_2 * x) / b_2
 	else:
+		#print("failed due to b_1 == 0 and b_2 == 0")
 		return
 		
 	var point = Vector2(x, y)
 	if not fail_if_behind:
 		return point
-		
-	if (a_1 != 0 and (point.x - p_1.x) / a_1 < 0 ) or (b_1 != 0 and (point.y - p_1.y) / b_1 < 0):
+	
+	if (a_1 != 0 and (point.x - p_1.x) / -a_1 < 0 ) or (b_1 != 0 and (point.y - p_1.y) / b_1 < 0):
+		#print("failed due to point1 bullshit")
 		return
-	elif (a_2 != 0 and (point.x - p_2.x) / a_2 < 0) or (b_2 != 0 and (point.y - p_2.y) / b_2 < 0):
+	elif (a_2 != 0 and (point.x - p_2.x) / -a_2 < 0) or (b_2 != 0 and (point.y - p_2.y) / b_2 < 0):
+		#print("failed due to point2 bullshit")
 		return
+	
+	#print("intersection: ", edge_1.direction, " @ ", edge_1.start, " ", a_1, "x + ", b_1, "y = ", c_1)
+	#print("              ", edge_2.direction, " @ ", edge_2.start, " ", a_2, "x + ", b_2, "y = ", c_2)
+	#print("            @ ", point)
 	return point
 
 func check_circle_event(parabola):
@@ -231,7 +286,7 @@ func check_circle_event(parabola):
 
 	var intersection_point = find_intersection(xl, xr)
 	if not intersection_point:
-		print('\t\tno intersection point', xl.start, " ",  xl.direction, " : ", xr.start, " ", xr.direction)
+		#print('\t\tno intersection point', xl.start, " ",  xl.direction, " : ", xr.start, " ", xr.direction)
 		return
 	
 	var r = intersection_point.distance_to(parabola.focus)
@@ -240,6 +295,7 @@ func check_circle_event(parabola):
 	
 	var circle_event = CircleEvent.new(parabola, intersection_point.y + r)
 	parabola.event = circle_event
+	print("new circle event", parabola)
 	queue.push(circle_event)
 
 func circumcenter(A, B, C):
@@ -257,8 +313,9 @@ func circumcenter(A, B, C):
 	], [
 		BC.x, -BC.y, d_BC, M_BC
 	], false)
+	
 	if not O:
 		return
 	
-	print("\tcircumcenter: ", A, " ", B, " ", C, " => ", O)
+	#print("\tcircumcenter: ", A, " ", B, " ", C, " => ", O)
 	return O
