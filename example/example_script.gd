@@ -35,35 +35,31 @@ func draw_parabola(parabola, directrix):
 		return
 
 	var limits = parabola.get_limits(directrix)
-	if not limits[0]:
+	#if limits[0] == limits[1] and (limits[0] or limits[1]):
+	#	print("limits: ", limits, " f=", focus)
+	if not limits[0] or limits[ 0 ] < - width / 2.0:
 		limits[0] = -width / 2.0
-
-	if not limits[1]:
+	if not limits[1] or limits[ 0 ] > width / 2.0:
 		limits[1] = width / 2.0
 
 	var points : PoolVector2Array;
 	var V = Vector2(focus.x, (focus.y + directrix) / 2.0)
 	var d = (directrix - focus.y) / 2.0
-	for x in range(limits[0], limits[1]):
-		points.append(
-			Vector2(x, 
-					pow(x - V.x, 2) / (-4 * d) + V.y)
-		)
-		points.append(
-			Vector2(x + 1,
-					pow(x + 1 - V.x, 2) / (-4 * d) + V.y)
-		)
+	
+	for x in range(limits[0],limits[1]):
+		points.append(Vector2(x, pow(x - V.x, 2) / (-4 * d) + V.y))
+		points.append(Vector2(x + 1, pow(x + 1 - V.x, 2) / (-4 * d) + V.y))
 
 	if points.size() > 1:
 		draw_polyline(points, Color.white)
 	else:
-		print(limits)
+		#print(limits)
 		draw_circle(parabola.focus, 4.0, Color.red)
 
 func _draw():
 	for child in get_children():
 		draw_circle(child.position, 2, Color.green)
-
+		
 	var rect = get_viewport_rect()
 	var width = rect.size.x
 
@@ -83,10 +79,10 @@ func _draw():
 				draw_line(line.start, line.stop, Color.green)
 			else:
 				draw_line(line.start, line.start + 100 * line.direction, Color.pink)
-
+		
 	if limit:
 		while leftovers:
-			draw_parabola(leftovers, limit)
+			leftovers.draw(self, limit)
 			leftovers = leftovers.right
 
 func _input(event):
@@ -118,7 +114,8 @@ func generate_child():
 	var child = Node2D.new()
 	add_child(child)
 	child.position.x = boundary_size * rand_range(-1,1)
-	child.position.y = boundary_size * rand_range(-1,1)	
+	child.position.y = boundary_size * rand_range(-1,1)
+	return child
 	
 func generate_children():
 	for i in range(child_count):

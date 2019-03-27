@@ -64,32 +64,116 @@ class Arc:
 	func get_intersection(parabola, directrix):
 		if not parabola:
 			return null
-
+		
+		#1: ((x-v.x)^2)/(4*f) + v.y
+		#1: x
+		
 		var f1 = ( focus.y - directrix ) / 2.0
 		var f2 = ( parabola.focus.y - directrix ) / 2.0
+		
+		if f1 == f2:
+			return null
+		
+		if f1 == 0 and f2 == 0:
+			return null
+		
+		if f1 == 0:
+			return [
+				focus.x
+			]
+		if f2 == 0:
+			return [
+				parabola.focus.y
+			]
 	
 		var V1 = Vector2( focus.x, (focus.y + directrix) / 2.0)
 		var V2 = Vector2( parabola.focus.x, (parabola.focus.y + directrix) / 2.0)
 
-		var a = f1 - f2
-		var b = 2.0 * ( f1 * V2.x - f2 * V2.x )
-		var c = f2 * V1.x * V1.x - f1 * V2.x * V2.x - 4 * f1 * f2 * (V1.y - V2.y)
+		var F1 = 0.25 / f1
+		var F2 = 0.25 / f2
+		var a = F1 - F2
+		var b = - 2.0 * ( F1 * V1.x - F2 * V2.x )
+		var c = V1.y - V2.y + F1 * pow(V1.x, 2) - F2 * pow(V2.x, 2)
 
 		if b*b < 4 * a * c:
+			print("  intersection nulled because of imaginary results")
 			return null
-		return (-b + sqrt( b * b - 4 * a * c)) / (2 * a)
+			
+		if a == 0:
+			return [
+				-c / b
+			]
+		
+		var x_1 = (-b + sqrt( b * b - 4 * a * c)) / (2 * a)
+		var x_2 = (-b - sqrt( b * b - 4 * a * c)) / (2 * a)
+		
+		return [x_1, x_2]
 
 	func get_limits(directrix):
-		if left and right:
-			print(left.focus, " ", focus, " ", right.focus)
-		elif left:
-			print(left.focus, " ", focus, " ", null)
-		elif right:
-			print(null, " ", focus, " ", right.focus)
+		var l = get_intersection(left, directrix)
+		var r = get_intersection(right, directrix)
+		
+		if not l and not r:
+			return [null, null]	
+		elif not l:
+			r.sort()
+			return [null, r[0]]
+		elif not r:
+			l.sort()
+			return [l[l.size()-1], null]
 		else:
-			print(null, " ", focus, " ", null)
-
-		return [get_intersection(left, directrix), get_intersection(right,directrix)]
+			l.sort()
+			r.sort()
+			return [l[0], r[r.size()-1]]
+			
+		
+		if not l:
+			l = [null]
+		l.sort()
+		if not r:
+			r = [null]
+		r.sort()
+		print("\t\tl=", l, " r=", r)
+		return [l[l.size()-1], r[0]]
+		
+	func draw(node, directrix):
+		var rect = node.get_viewport_rect()
+		var width = rect.size.x
+		var height = rect.size.y
+		var limits = get_limits(directrix)
+	
+		if left_edge:
+			node.draw_circle(left_edge.start, 3.0, Color.black)
+			node.draw_line(left_edge.start, left_edge.start + 100 * left_edge.direction, Color.blue)
+	
+		if right_edge:
+			node.draw_circle(right_edge.start, 3.0, Color.black)
+			node.draw_line(right_edge.start, right_edge.start + 100 * right_edge.direction, Color.black)
+	
+		if directrix == focus.y:
+			node.draw_line(focus, Vector2(focus.x, - focus.y - height / 2.0), Color.white)
+			return
+	
+		
+		print("prelimits", limits)
+		if typeof(limits[0]) == 0 or limits[ 0 ] < - width / 2.0:
+			limits[0] = -width / 2.0
+		if typeof(limits[1]) == 0 or limits[ 1 ] > width / 2.0:
+			limits[1] = width / 2.0
+	
+		var points : PoolVector2Array;
+		var V = Vector2(focus.x, (focus.y + directrix) / 2.0)
+		var d = (directrix - focus.y) / 2.0
+		
+		print("focus=", focus, " limits=", limits)
+		for x in range(limits[0],limits[1]):
+			points.append(Vector2(x, pow(x - V.x, 2) / (-4 * d) + V.y))
+			points.append(Vector2(x+1, pow(x + 1 - V.x, 2) / (-4 * d) + V.y))
+	
+		if points.size() > 1:
+			node.draw_polyline(points, Color.white)
+		else:
+			node.draw_circle(focus, 4.0, Color.red)
 
 class Edge:
 	var start
@@ -318,9 +402,9 @@ func check_circle_event(parabola):
 		return
 
 	var intersection_point = find_intersection(xl, xr)
-	print("intersection point for ", xl.direction, " @ ", xl.start)
-	print("                       ", xr.direction, " @ ", xr.start)
-	print("                     = ", intersection_point)
+	#print("intersection point for ", xl.direction, " @ ", xl.start)
+	#print("                       ", xr.direction, " @ ", xr.start)
+	#print("                     = ", intersection_point)
 	if not intersection_point:
 		return
 	
