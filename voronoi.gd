@@ -75,11 +75,20 @@ class Arc:
 		var b = 2.0 * ( f1 * V2.x - f2 * V2.x )
 		var c = f2 * V1.x * V1.x - f1 * V2.x * V2.x - 4 * f1 * f2 * (V1.y - V2.y)
 
-		if b*b == 4 * a * c:
+		if b*b < 4 * a * c:
 			return null
 		return (-b + sqrt( b * b - 4 * a * c)) / (2 * a)
 
 	func get_limits(directrix):
+		if left and right:
+			print(left.focus, " ", focus, " ", right.focus)
+		elif left:
+			print(left.focus, " ", focus, " ", null)
+		elif right:
+			print(null, " ", focus, " ", right.focus)
+		else:
+			print(null, " ", focus, " ", null)
+
 		return [get_intersection(left, directrix), get_intersection(right,directrix)]
 
 class Edge:

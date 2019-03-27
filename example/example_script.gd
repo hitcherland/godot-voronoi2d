@@ -35,13 +35,11 @@ func draw_parabola(parabola, directrix):
 		return
 
 	var limits = parabola.get_limits(directrix)
-	print(limits)
 	if not limits[0]:
 		limits[0] = -width / 2.0
 
 	if not limits[1]:
 		limits[1] = width / 2.0
-	print('\t',limits)
 
 	var points : PoolVector2Array;
 	var V = Vector2(focus.x, (focus.y + directrix) / 2.0)
@@ -55,10 +53,12 @@ func draw_parabola(parabola, directrix):
 			Vector2(x + 1,
 					pow(x + 1 - V.x, 2) / (-4 * d) + V.y)
 		)
-	draw_polyline(points, Color.white)
 
-
-
+	if points.size() > 1:
+		draw_polyline(points, Color.white)
+	else:
+		print(limits)
+		draw_circle(parabola.focus, 4.0, Color.red)
 
 func _draw():
 	for child in get_children():
