@@ -2,45 +2,63 @@ extends Node2D
 
 var Voronoi = load("res://voronoi.gd").new();
 
-export(int) var child_count = 3 setget update_child_count
+export var child_count = 3 setget update_child_count
 export(float) var boundary_size = 100 setget update_boundary_size
 export(bool) var refresh_random = true
 export(bool) var use_mouse_as_limit = false
 var limit = null
-# Called when the node enters the scene tree for the first time.
+
 func _ready():
 	if refresh_random:
 		randomize()
 	var rect = get_viewport_rect()
-	var min_value = min(rect.size.x/2.0, rect.size.y/2.0)
+	var min_value = min(rect.size.x/2.0, rect.size.y/2.0) * 0.8
 	generate_children()
 	update_boundary_size(min_value)
 
-func draw_parabola(focus, directrix):
-		
-	if directrix == focus.y:
-		draw_line(focus, Vector2(focus, 0), Color.white)
-		return
-	
+func draw_parabola(parabola, directrix):
 	var rect = get_viewport_rect()
-	directrix = directrix - focus.y
 	var width = rect.size.x
 	var height = rect.size.y
+	var focus = parabola.focus
 
-	
+	if parabola.left_edge:
+		draw_circle(parabola.left_edge.start,3.0, Color.black)
+		draw_line(parabola.left_edge.start, parabola.left_edge.start + 100 * parabola.left_edge.direction, Color.blue)
+
+	if parabola.right_edge:
+		draw_circle(parabola.right_edge.start,3.0, Color.black)
+		draw_line(parabola.right_edge.start, parabola.right_edge.start + 100 * parabola.right_edge.direction, Color.black)
+
+	if directrix == focus.y:
+		draw_line(focus, Vector2(focus.x, focus.y - height / 2.0), Color.white)
+		return
+
+	var limits = parabola.get_limits(directrix)
+	print(limits)
+	if not limits[0]:
+		limits[0] = -width / 2.0
+
+	if not limits[1]:
+		limits[1] = width / 2.0
+	print('\t',limits)
+
 	var points : PoolVector2Array;
-	var V = focus - Vector2(0, -directrix)
-	for x in range(-width / 2.0 + focus.x, width / 2.0 + focus.x):
+	var V = Vector2(focus.x, (focus.y + directrix) / 2.0)
+	var d = (directrix - focus.y) / 2.0
+	for x in range(limits[0], limits[1]):
 		points.append(
 			Vector2(x, 
-					pow(x - V.x, 2) / (-4 * directrix) + V.y)
+					pow(x - V.x, 2) / (-4 * d) + V.y)
 		)
 		points.append(
 			Vector2(x + 1,
-					pow(x + 1 - V.x, 2) / (-4 * directrix) + V.y)
+					pow(x + 1 - V.x, 2) / (-4 * d) + V.y)
 		)
-	print("drawing parabola")
 	draw_polyline(points, Color.white)
+
+
+
 
 func _draw():
 	for child in get_children():
@@ -48,32 +66,37 @@ func _draw():
 
 	var rect = get_viewport_rect()
 	var width = rect.size.x
-	var height = rect.size.y
 
 	if not use_mouse_as_limit:
 		limit = null
 	elif limit:
 		draw_line(Vector2(-width/2.0, limit), Vector2(width/2.0, limit), Color.red)
 	
-	print(limit)
 	var output = Voronoi.voronoi(get_children(), limit)
 	var polygons = output[0]
 	var leftovers = output[1]
 		
 	for polygon in polygons:
 		for line in polygon:
-			draw_line(line.start, line.stop, Color.blue)
-	
+			if line.stop:
+				draw_circle(line.stop, line.stop.distance_to(line.nodes[0].position), Color(1,1,0,0.1))
+				draw_line(line.start, line.stop, Color.green)
+			else:
+				draw_line(line.start, line.start + 100 * line.direction, Color.pink)
+
 	if limit:
-		print("trying to draw leftovers...", leftovers)
 		while leftovers:
-			draw_parabola(leftovers.focus, limit)
+			draw_parabola(leftovers, limit)
 			leftovers = leftovers.right
 
 func _input(event):
 	if use_mouse_as_limit and event is InputEventMouseMotion:
 		limit = event.position.y - get_viewport_rect().size.y / 2.0
 		update()
+	
+	if event is InputEventKey:
+		if event.pressed and event.scancode == KEY_ESCAPE:
+			get_tree().quit()
 
 func update_child_count(value):
 	child_count = value

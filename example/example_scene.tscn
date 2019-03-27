@@ -37,13 +37,12 @@ size_flags_horizontal = 0
 custom_constants/separation = 5
 
 [node name="HBoxContainer" type="HBoxContainer" parent="Control/VBoxContainer"]
-margin_right = 186.0
+margin_right = 146.0
 margin_bottom = 20.0
 alignment = 2
 
 [node name="RandomiseButton" type="Button" parent="Control/VBoxContainer/HBoxContainer"]
-margin_left = 40.0
-margin_right = 186.0
+margin_right = 146.0
 margin_bottom = 20.0
 grow_horizontal = 0
 mouse_default_cursor_shape = 2
@@ -53,13 +52,13 @@ text = "Randomise Positions"
 
 [node name="HBoxContainer2" type="HBoxContainer" parent="Control/VBoxContainer"]
 margin_top = 25.0
-margin_right = 186.0
+margin_right = 146.0
 margin_bottom = 45.0
 alignment = 2
 
 [node name="AddNodeButton" type="Button" parent="Control/VBoxContainer/HBoxContainer2"]
-margin_left = 83.0
-margin_right = 186.0
+margin_left = 43.0
+margin_right = 146.0
 margin_bottom = 20.0
 grow_horizontal = 0
 mouse_default_cursor_shape = 2
@@ -69,13 +68,13 @@ text = "Add Node (+1)"
 
 [node name="HBoxContainer4" type="HBoxContainer" parent="Control/VBoxContainer"]
 margin_top = 50.0
-margin_right = 186.0
+margin_right = 146.0
 margin_bottom = 70.0
 alignment = 2
 
 [node name="RemoveNodeButton" type="Button" parent="Control/VBoxContainer/HBoxContainer4"]
-margin_left = 59.0
-margin_right = 186.0
+margin_left = 19.0
+margin_right = 146.0
 margin_bottom = 20.0
 grow_horizontal = 0
 mouse_default_cursor_shape = 2
@@ -85,13 +84,13 @@ text = "Remove Node (-1)"
 
 [node name="HBoxContainer3" type="HBoxContainer" parent="Control/VBoxContainer"]
 margin_top = 75.0
-margin_right = 186.0
+margin_right = 146.0
 margin_bottom = 95.0
 alignment = 2
 
 [node name="Add10NodesButton" type="Button" parent="Control/VBoxContainer/HBoxContainer3"]
-margin_left = 75.0
-margin_right = 186.0
+margin_left = 35.0
+margin_right = 146.0
 margin_bottom = 20.0
 grow_horizontal = 0
 mouse_default_cursor_shape = 2
@@ -101,13 +100,13 @@ text = "Add Node (+10)"
 
 [node name="HBoxContainer5" type="HBoxContainer" parent="Control/VBoxContainer"]
 margin_top = 100.0
-margin_right = 186.0
+margin_right = 146.0
 margin_bottom = 120.0
 alignment = 2
 
 [node name="Remove10NodesButton" type="Button" parent="Control/VBoxContainer/HBoxContainer5"]
-margin_left = 51.0
-margin_right = 186.0
+margin_left = 11.0
+margin_right = 146.0
 margin_bottom = 20.0
 grow_horizontal = 0
 mouse_default_cursor_shape = 2

@@ -51,22 +51,45 @@ class Arc:
 		focus = new_node.position
 	
 	func replace_with(parabola_a, parabola_c):
+		parabola_a.left = left
+		parabola_a.left_edge = left_edge
 		if left:
-			parabola_a.left = left
 			left.right = parabola_a
-			parabola_a.left_edge = left_edge
 			
+		parabola_c.right = right
+		parabola_c.right_edge = right_edge
 		if right:
 			right.left = parabola_c
-			parabola_c.right = right
-			parabola_c.right_edge = right_edge
+
+	func get_intersection(parabola, directrix):
+		if not parabola:
+			return null
+
+		var f1 = ( focus.y - directrix ) / 2.0
+		var f2 = ( parabola.focus.y - directrix ) / 2.0
+	
+		var V1 = Vector2( focus.x, (focus.y + directrix) / 2.0)
+		var V2 = Vector2( parabola.focus.x, (parabola.focus.y + directrix) / 2.0)
+
+		var a = f1 - f2
+		var b = 2.0 * ( f1 * V2.x - f2 * V2.x )
+		var c = f2 * V1.x * V1.x - f1 * V2.x * V2.x - 4 * f1 * f2 * (V1.y - V2.y)
+
+		if b*b == 4 * a * c:
+			return null
+		return (-b + sqrt( b * b - 4 * a * c)) / (2 * a)
+
+	func get_limits(directrix):
+		return [get_intersection(left, directrix), get_intersection(right,directrix)]
 
 class Edge:
 	var start
 	var stop
 	var direction
+	var nodes
 	
-	func _init(new_start, new_direction):
+	func _init(new_nodes, new_start, new_direction):
+		nodes = new_nodes
 		start = new_start
 		direction = new_direction
 	
@@ -104,15 +127,10 @@ func voronoi(nodes, stop_at_y = null):
 	
 	for node in nodes:
 		if not stop_at_y or node.position.y < stop_at_y:
-			print(stop_at_y, " vs. ", node.position.y)
 			queue.push(SiteEvent.new(node))
 	
 	while queue.size() > 0:
 		var event = queue.pop()
-		if stop_at_y and stop_at_y <= event.key:
-			print(stop_at_y, " <= ", event.key)
-			break
-		print( "new event: ", event.key, " ", event is SiteEvent)
 		directrix = event.key
 		if event is SiteEvent:
 			add_parabola(event.node)
@@ -139,6 +157,16 @@ func voronoi(nodes, stop_at_y = null):
 func get_polygons(nodes, stop_at_y = null):
 	return voronoi(nodes, stop_at_y)[0]
 
+func solve_parabola(parabola, point):
+	var focus = parabola.focus
+	var directrix = point.y
+	var x = point.x
+
+	var V = Vector2(focus.x, (focus.y + directrix) / 2.0)
+	var d = (directrix - focus.y) / 2.0
+
+	return Vector2(x, pow(x - V.x, 2) / (-4 * d) + V.y)
+
 func add_parabola(node):
 	if not root:
 		root = Arc.new(node)
@@ -151,9 +179,11 @@ func add_parabola(node):
 	var a = Arc.new(parent.node)
 	var b = Arc.new(node)
 	var c = Arc.new(parent.node)
+
+	var edge_point = solve_parabola(parent, node.position)
 	
-	var xl = Edge.new(parent.focus, (a.focus-b.focus).tangent())
-	var xr = Edge.new(parent.focus, (b.focus-c.focus).tangent())
+	var xl = Edge.new([node, parent.node], edge_point, (a.focus-b.focus).tangent())
+	var xr = Edge.new([node, parent.node], edge_point, (b.focus-c.focus).tangent())
 	
 	b.left = a
 	a.right = b
@@ -190,7 +220,10 @@ func remove_parabola(parabola):
 			side.event.valid = false
 	
 	var s = circumcenter(left.focus, parabola.focus, right.focus)
-	var edge = Edge.new(s, (left.focus-right.focus).tangent())
+	if not s:
+		print("no circumcenter to remove parabola")
+		return []
+	var edge = Edge.new([left.node, right.node], s, (left.focus-right.focus).tangent())
 	
 	parabola.left_edge.stop = s
 	parabola.right_edge.stop = s
@@ -243,7 +276,6 @@ func find_intersection(edge_1, edge_2, fail_if_behind=true):
 		p_2 = edge_2[3]
 	
 	if a_1 * b_2 == a_2 * b_1:
-		#print( "failed due to values", a_1 * b_2, "==", a_2 * b_1)
 		return
 	
 	var x = (b_2 * c_1 - c_2 * b_1) / (a_1 * b_2 - a_2 * b_1 )
@@ -254,7 +286,6 @@ func find_intersection(edge_1, edge_2, fail_if_behind=true):
 	elif b_2 != 0:
 		y = (c_2 - a_2 * x) / b_2
 	else:
-		#print("failed due to b_1 == 0 and b_2 == 0")
 		return
 		
 	var point = Vector2(x, y)
@@ -262,15 +293,10 @@ func find_intersection(edge_1, edge_2, fail_if_behind=true):
 		return point
 	
 	if (a_1 != 0 and (point.x - p_1.x) / -a_1 < 0 ) or (b_1 != 0 and (point.y - p_1.y) / b_1 < 0):
-		#print("failed due to point1 bullshit")
 		return
 	elif (a_2 != 0 and (point.x - p_2.x) / -a_2 < 0) or (b_2 != 0 and (point.y - p_2.y) / b_2 < 0):
-		#print("failed due to point2 bullshit")
 		return
 	
-	#print("intersection: ", edge_1.direction, " @ ", edge_1.start, " ", a_1, "x + ", b_1, "y = ", c_1)
-	#print("              ", edge_2.direction, " @ ", edge_2.start, " ", a_2, "x + ", b_2, "y = ", c_2)
-	#print("            @ ", point)
 	return point
 
 func check_circle_event(parabola):
@@ -278,12 +304,15 @@ func check_circle_event(parabola):
 	var right = parabola.right
 	var xl = parabola.left_edge
 	var xr = parabola.right_edge
+
 	if not left or not right or left.focus == right.focus:
 		return
 
 	var intersection_point = find_intersection(xl, xr)
+	print("intersection point for ", xl.direction, " @ ", xl.start)
+	print("                       ", xr.direction, " @ ", xr.start)
+	print("                     = ", intersection_point)
 	if not intersection_point:
-		#print('\t\tno intersection point', xl.start, " ",  xl.direction, " : ", xr.start, " ", xr.direction)
 		return
 	
 	var r = intersection_point.distance_to(parabola.focus)
@@ -292,7 +321,6 @@ func check_circle_event(parabola):
 	
 	var circle_event = CircleEvent.new(parabola, intersection_point.y + r)
 	parabola.event = circle_event
-	print("new circle event", parabola)
 	queue.push(circle_event)
 
 func circumcenter(A, B, C):
@@ -314,5 +342,4 @@ func circumcenter(A, B, C):
 	if not O:
 		return
 	
-	#print("\tcircumcenter: ", A, " ", B, " ", C, " => ", O)
-	return O
+	return Vector2(O.y, O.x)
