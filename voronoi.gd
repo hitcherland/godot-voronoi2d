@@ -154,8 +154,7 @@ class Arc:
 			node.draw_line(focus, Vector2(focus.x, - focus.y - height / 2.0), Color.white)
 			return
 	
-		
-		print("prelimits", limits)
+		#print("prelimits", limits)
 		if typeof(limits[0]) == 0 or limits[ 0 ] < - width / 2.0:
 			limits[0] = -width / 2.0
 		if typeof(limits[1]) == 0 or limits[ 1 ] > width / 2.0:
@@ -165,7 +164,7 @@ class Arc:
 		var V = Vector2(focus.x, (focus.y + directrix) / 2.0)
 		var d = (directrix - focus.y) / 2.0
 		
-		print("focus=", focus, " limits=", limits)
+		#print("focus=", focus, " limits=", limits)
 		for x in range(limits[0],limits[1]):
 			points.append(Vector2(x, pow(x - V.x, 2) / (-4 * d) + V.y))
 			points.append(Vector2(x+1, pow(x + 1 - V.x, 2) / (-4 * d) + V.y))
